@@ -1,0 +1,112 @@
+﻿@page "/"
+@rendermode InteractiveServer
+
+<h3>Task Tracker (@tasks.Count(t => !t.IsCompleted) active)</h3>
+
+<div class="card p-3 mb-3">
+    <div class="row g-2 align-items-end">
+        <div class="col-md-4">
+            <label>Task name:</label>
+            <input class="form-control" @bind="newTitle"/>
+        </div>
+        <div class="col-md-3">
+            <label>Due date:</label>
+            <input class="form-control" type="date" @bind="newDueDate"/>
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-primary w-50" @onclick="AddTask">Add</button>
+        </div>
+        @if (validation)
+            { <span class="text-danger">Please fill out the fields!</span> }
+    </div>
+</div>
+
+<div class="btn-group mb-3">
+    <button class="btn @(filter == "all" ? "btn-dark" : "btn-outline-dark")" @onclick='() => filter = "all"'>All</button>
+    <button class="btn @(filter == "completed" ? "btn-dark" : "btn-outline-dark")" @onclick='() => filter = "completed"'>Completed</button>
+    <button class="btn @(filter == "active" ? "btn-dark" : "btn-outline-dark")" @onclick='() => filter = "active"'>Active</button>
+</div>
+
+@if (!FilteredTasks.Any())
+{
+    <p>No tasks found.</p>
+}
+else
+{
+    <table class="table table-bordered align-middle">
+        <thead class="table-light">
+            <tr>
+                <th style="width: 35%">Task</th>
+                <th>Start Date</th>
+                <th>Due date</th>
+                <th style="width: 110px" class="text-center">Completed</th>
+                <th style="width: 110px"></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var t in FilteredTasks)
+            {
+                <tr class="@(t.IsCompleted ? "table-success" : "")">
+                    <td>
+                        @if (t.IsCompleted) 
+                            { <s class="text-muted">@t.Title</s> }
+                        else 
+                            { @t.Title }
+                    </td>
+                    <td>@t.StartDate</td>
+                    <td>@t.DueDate</td>
+                    <td class="text-center">
+                        <input type="checkbox" class="form-check-input" @bind="t.IsCompleted"/>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" @onclick="() => DeleteTask(t)">Delete Task</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    //private List<TaskItem> tasks = new();
+    private List<TaskItem> tasks = new() {
+        new() { Title = "Buy groceries", StartDate = "06.04.2026", DueDate = "07.04.2026", IsCompleted = false },
+        new() { Title = "Finish the CSS styling", StartDate = "06.04.2026", DueDate = "10.04.2026", IsCompleted = true },
+        new() { Title = "Discuss the new project with colleagues", StartDate = "06.04.2026", DueDate = "08.04.2026", IsCompleted = false  },
+        new() { Title = "Connect to a database", StartDate = "06.04.2026", DueDate = "15.04.2026", IsCompleted = false },
+        new() { Title = "Reserve a table for the trip", StartDate = "06.04.2026", DueDate = "09.04.2026", IsCompleted = true  },
+    };
+
+    private string newTitle = "";
+    private DateTime? newDueDate;
+    private string filter = "all";
+    private bool validation = false;
+
+    private void AddTask()
+    {
+        if (string.IsNullOrWhiteSpace(newTitle) || !newDueDate.HasValue)
+        {
+            validation = true;
+            return;
+        }
+
+        tasks.Add(new TaskItem {
+            Title = newTitle,
+            StartDate = DateTime.Today.ToString("dd.MM.yyyy"),
+            DueDate = newDueDate.Value.ToString("dd.MM.yyyy"),
+            IsCompleted = false
+        });
+
+        newTitle = "";
+        newDueDate = null;
+        validation = false;
+    }
+
+    private IEnumerable<TaskItem> FilteredTasks => filter switch {
+        "completed" => tasks.Where(t => t.IsCompleted),
+        "active" => tasks.Where(t => !t.IsCompleted),
+        _ => tasks,
+    };
+
+    private void DeleteTask(TaskItem t) => tasks.Remove(t);
+}
